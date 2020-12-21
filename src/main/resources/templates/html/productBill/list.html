@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ch" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script type="application/javascript" src="/static/js/common.js"></script>
+    <title>商品列表</title>
+</head>
+<body class="app-body">
+<div class="app-panel">
+    <div class="app-context">
+        <table class="layui-table" id="product_table" lay-filter="product_table_filter"></table>
+    </div>
+</div>
+<!-- 顶部工具栏 -->
+<script type="text/html" id="toolbar">
+    <div class="layui-btn-group">
+        <button type="button" class="layui-btn layui-btn-normal" lay-event="add"><i class="layui-icon layui-icon-add-1"></i>采购入库</button>
+        <button type="button" class="layui-btn layui-btn-primary" lay-event="search"><i class="layui-icon layui-icon-search"></i>高级查询</button>
+    </div>
+</script>
+<!-- 行工具栏 -->
+<script type="text/html" id="col-toolbar">
+    <div class="layui-btn-container">
+        {{# if(!d.arrive){ }}
+        <button type="button" class="layui-btn layui-btn-xs layui-btn-primary" title="到货" lay-event="arrive"><i class="layui-icon">&#xe698;</i></button>
+        {{# } }}
+<!--        <button type="button" class="layui-btn layui-btn-xs layui-btn-primary" title="编辑" lay-event="edit"><i class="layui-icon">&#xe642;</i></button>-->
+        <button type="button" class="layui-btn layui-btn-xs layui-btn-danger" title="删除" lay-event="del"><i class="layui-icon">&#xe640;</i></button>
+<!--        <button type="button" class="layui-btn layui-btn-xs layui-btn-danger" title="撤回" lay-event="undo"><i class="layui-icon">&#xe64f;</i></button>-->
+        {{# if(!d.rebates){ }}
+        <button type="button" class="layui-btn layui-btn-xs layui-btn-normal" title="支付" lay-event="rePaly"><i class="layui-icon">&#xe627;</i></button>
+        {{# } }}
+
+    </div>
+</script>
+
+<script type="application/javascript" th:inline="none">
+    layui.use(['table', 'utils', 'form', 'axiosUtil'], function () {
+        var $ = layui.jquery,
+            table = layui.table,
+            utils = layui.utils,
+            form = layui.form,
+            axiosUtil = layui.axiosUtil,
+            layer = parent.layer;
+
+        //渲染
+        var _table = table.render({
+            id: "productBill",
+            elem: '#product_table',
+            url : '/productBill/listData',
+            page : true,
+            height : "full-25",
+            limit: 10,
+            limits:[1, 10, 50, 100, 500, 1000, 5000],
+            request: {
+                pageName: 'current' //页码的参数名称，默认：page
+                ,limitName: 'size' //每页数据量的参数名，默认：limit
+            },
+            toolbar: "#toolbar",
+            defaultToolbar: ['filter', {
+                title: '刷新' //标题
+                ,layEvent: 'refresh' //事件名，用于 toolbar 事件中使用
+                ,icon: 'layui-icon-refresh' //图标类名
+            }],
+            cols : [[
+                {type:'checkbox'},
+                {type: 'numbers'},
+                {field: 'purchaseOder', title: '订单号', align: 'left', hide: true},
+                {field: 'productName', title: '产品名称', align: 'left'},
+                {field: 'supplierName', title: '供应商名称', align: 'left'},
+                {field: 'number', title: '数量', align: 'center'},
+                {field: 'costPrice', title: '采购价格', align:'center'},
+                {field: 'salePrice', title: '销售价格', align:'center'},
+                {field: 'paymentAmount', title: '总金额', align:'center'},
+                {field: 'orderTime', title: '订单时间', align:'center'},
+                {field: 'arrive', title: '入库时间', align:'center', templet: function (d) {
+                    return d.arrive === true ? d.arriveTime : '<span class="layui-badge">未入库</span>';
+                    }},
+                {field: 'rebates', title: '返款时间', align:'center', templet: function (d) {
+                    return d.rebates === true ? '<a href="JavaScript:void(0);" class="stl-cursor-pointer" data-ouuid="'+d.purchaseOder+'" ' +
+                        'lay-click="show_rebates">'+d.rebatesTime+'</a>' : '<span class="layui-badge">未支付</span>';
+                    }},
+                {title: '操作', align:'center', toolbar: '#col-toolbar'}
+            ]]
+        });
+
+        //编辑
+        function edit(id, yes){
+            id = id == undefined ? '' : id;
+            layer.open({
+                type : 2,
+                title: '新增/编辑',
+                shadeClose: true,
+                area : ['800px', '80%'],
+                content : '/html/productBill/edit_in?id='+id,
+                btn: ['保存', '取消'],
+                success: function(layero, index){
+
+                },yes: function (index, layero) {
+                    var form = layer.getChildFrame('form', index);
+                    var field = utils.formValue(form);
+                    _submit(field, function () {
+                        layer.close(index);
+                        if(typeof yes === "function"){
+                            yes(field);
+                        }
+                    });
+                },btn2: function(index, layero){
+                    layer.close(index);
+                }
+                ,end : function(index, layero){
+                    axiosUtil.reload(_table);
+                    return false;
+                }
+            });
+        }
+
+        /**
+         * 表单提交
+         * @param field
+         * @param success
+         * @private
+         */
+        function _submit(field, success){
+            let url = '/productBill';
+            if(field.id){
+                url += '/edit'
+            }else {
+                url += '/purchase';//采购入库
+            }
+
+            axiosUtil.axios_post(url, field, success);
+        }
+
+        //监听头部工具栏事件
+        table.on('toolbar(product_table_filter)', function(obj){
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch(obj.event){
+                case 'add':
+                    edit();
+                    break;
+                case 'search':
+                    layer.open({
+                        type: 2,
+                        maxmin: true,
+                        title: '高级查询',
+                        shadeClose: true,
+                        area : ['800px', '400px'],
+                        content : '/html/productBill/search',
+                        btn: ['查询', '取消'],
+                        yes: function (index, layero) {
+                            var form = layer.getChildFrame('form', index);
+                            var field = utils.formValue(form);
+                            axiosUtil.reload(_table, {
+                                where: field
+                            });
+                            //开放高级查询结果导出
+                            $("#export_query").show();
+                            layui.sessionData("queryConditions", {
+                                key: _table.config.id, value: field
+                            })
+                        },btn2: function(index, layero){
+                            layer.close(index);
+                        }
+                    });
+                    break;
+                case 'refresh':
+                    axiosUtil.reload(_table);
+                    break;
+            }
+        });
+
+
+        //监听工具条
+        table.on('tool(product_table_filter)', function(obj){ //注：tool 是工具条事件名，test 是 table 原始容器的属性 lay-filter="对应的值"
+            var data = obj.data; //获得当前行数据
+            var tr = obj.tr; //获得当前行 tr 的 DOM 对象（如果有的话）
+            var that = this;
+
+            switch(obj.event){
+                case 'edit':
+                    edit(data.id, function (field) {
+                        //同步更新缓存对应的值
+                        obj.update(field);
+                    });
+                    break;
+                case 'del':
+                    layer.confirm('<i style="color: #ff5722">此操作不可逆！！！</i></br> 是否删除【'+data.productName+'】？', function (index) {
+                        layer.close(index);
+                        axiosUtil.axios_get("/order/purchase/del", {id: data.id}, function (data, msg) {
+                            layer.msg(msg);
+                            obj.del();
+                        });
+                    });
+                    break;
+                case 'undo':
+                    layer.confirm('<i style="color: #FF5722">此操作不可逆！！！</i></br> 请确认撤回【'+data.productName+'】', {title: '系统警告', icon: 0}, function(index){
+
+                        layer.prompt({
+                            formType: 2,
+                            title: '请输入撤回原因！',
+                            area: ['300px', '150px'] //自定义文本域宽高
+                        }, function(value, index2, elem){
+                            obj.del(); //删除对应行（tr）的DOM结构，并更新缓存
+                            //向服务端发送删除指令
+                            axiosUtil.axios_get("/productBill/undo", {id: data.id, mark: value});
+                            layer.close(index2);
+                        });
+                        layer.close(index);
+                    });
+                    break;
+                case 'arrive':
+                    layer.confirm('将标记订单【'+data.productName+'】状态为已到货，并修改库存，请确认！',{title: '请确认'}, function(index){
+                        axiosUtil.axios_get("/productBill/arrive", {id: data.id});
+                        $(that).hide();
+                        obj.update({arrive: true});
+                        layer.close(index);
+                    });
+                    break;
+                case 'rePaly'://支付
+                    layer.open({
+                        type: 2,
+                        title: '支付信息',
+                        shadeClose: true,
+                        area : ['30%', '60%'],
+                        content : '/html/productBill/returnPrice?id='+data.id + '&product_uuid='+data.productUuid,
+                        btn: ['保存', '取消'],
+                        yes: function (index, layero) {
+                            var form = layer.getChildFrame('form', index);
+                            var field = utils.formValue(form);
+                            field.uuid = data.purchaseOder;//加入订单号
+
+                            axiosUtil.axios_post("/order/purchase/rebates", field,  function() {
+                                $(that).hide();
+                                obj.update({rebates: true});
+                                layer.close(index);
+                                layer.msg("订单支付成功!");
+                            });
+                        },btn2: function(index, layero){
+                            layer.close(index);
+                        }
+                        ,end : function(index, layero){
+                            axiosUtil.reload(_table);
+                            return false;
+                        }
+                    });
+                    break;
+
+            }
+        });
+
+        //监听自定义点击事件
+
+
+
+    });
+
+</script>
+</body>
+</html>

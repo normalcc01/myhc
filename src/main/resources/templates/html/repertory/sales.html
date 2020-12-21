@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ch" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script type="application/javascript" src="/static/js/common.js"></script>
+    <title>产品出库(销售)</title>
+    <style>
+        .form_btn{
+            float: left;
+            display: block;
+            line-height: 38px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body class="app-body">
+<div class="app-panel">
+    <div class="app-form">
+        <form class="layui-form">
+            <div id="_is_select" style="display: none">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">产品名称</label>
+                    <div class="layui-input-block">
+                        <div id="_productSelect"></div>
+                    </div>
+                    <input type="hidden" name="productUuid" id="_productUuid">
+                </div>
+                <!-- 产品详情面板 -->
+                <div class="layui-form-item">
+                    <div class="layui-collapse product_show" id="product_show" style="display: none">
+                        <div class="layui-colla-item">
+                            <h2 class="layui-colla-title"><span></span></h2>
+                            <div class="layui-colla-content layui-show"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">出库时间</label>
+                <div class="layui-input-block">
+                    <input type="text" name="salesTime" class="layui-input" id="_salesTime">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">数量</label>
+                <div class="layui-input-inline">
+                    <input type="number" name="number" min="0" step="1" class="layui-input">
+                </div>
+                <div class="form_btn">
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" title="自动计算" style="display: none" id="_calculate" lay-click="calculate">
+                        <i class="layui-icon">&#xe9aa;</i>
+                    </button>
+                </div>
+<!--                <div class="layui-form-mid layui-word-aux">税率：<span id="_rate">0.00</span>%</div>-->
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">销售单价</label>
+                    <div class="layui-input-inline">
+                        <input type="number" name="salePrice" min="0.00" step="0.01" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">销售总额</label>
+                    <div class="layui-input-inline">
+                        <input type="number" name="saleTotalPrice" min="0.00" step="0.01" class="layui-input">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">客户名称</label>
+                <div class="layui-input-block">
+                    <input type="text" class="layui-input" name="customerName"/>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea class="layui-textarea" name="remark"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- 产品详情面板 -->
+<script type="text/html" id="product_show_tpl">
+    <table class="layui-table"  lay-even lay-skin="nob">
+        <tbody>
+        <tr>
+            <td width="20%">供应商</td>
+            <td width="80%">{{d.supplierName}}</td>
+        </tr>
+        <tr>
+            <td>种类</td>
+            <td>{{d.typeName}}</td>
+        </tr>
+        <tr>
+            <td>销售价格</td>
+            <td>￥{{d.salePrice}}</td>
+        </tr>
+        </tbody>
+    </table>
+</script>
+<script type="application/javascript" src="/static/lib/xm-select/xm-select.js"></script>
+<script type="application/javascript" th:inline="none">
+    layui.use(['laydate', 'utils', 'axiosUtil', 'form', 'element', 'laytpl'], function () {
+        var $ = layui.$,
+            laydate = layui.laydate,
+            utils = layui.utils,
+            axiosUtil = layui.axiosUtil,
+            form = layui.form,
+            element = layui.element,
+            laytpl = layui.laytpl,
+            layer = parent.layer;
+
+        var is_select = utils.requestParam("select");
+
+        //销售时间
+        laydate.render({
+            elem: '#_salesTime'
+            ,value: utils.nowTime()
+            ,type: 'datetime'
+            ,format: 'yyyy-MM-dd HH:mm'
+        });
+
+        if(is_select){
+            $("#_is_select").show();
+            //渲染多选 -- 采购产品
+            var _xmSelect = xmSelect.render({
+                el: '#_productSelect',
+                filterable: true,
+                remoteSearch: true,
+                radio: true,
+                clickClose: true,
+                prop: {
+                    name: 'showname',
+                },
+                template({ item, sels, name, value }){
+                    return item.name  + '<span style="position: absolute; right: 10px; color: #8799a3">'+item.mark+'</span>'
+                },
+                remoteMethod: function(val, cb, show){
+                    axiosUtil.axios_get("/product/list", {keyword: val}, function (data) {
+                        var cbs = [];
+                        utils.each(data, function (_, item) {
+                            cbs.push({name: item.productName, value: item.uuid, showname: item.productName, mark: item.supplierName + "&nbsp;"})
+                        }, function () {
+                            cb(cbs);
+                        });
+                    });
+                },
+                data: [],
+                on: function({ arr, change, isAdd }){
+                    if(arr.length > 0){
+                        let productUuid = arr[0].value;
+                        //将选中的值放到隐藏域
+                        $("#_productUuid").val(productUuid);
+                        showProduct(productUuid);
+                        //加载所选商品信息
+                        getProductInfo(productUuid);
+                    }
+                }
+            });
+
+            /*//采购来源
+            axiosUtil.axios_get("/company/delivery/list", function (data) {
+                var _html = '';
+                utils.each(data, function (_, item) {
+                    _html += '<option value="'+item.uuid+'">'+item.fullName+'</option>'
+                }, function () {
+                    $("#_deliveryUuid").append(_html);
+                    form.render('select');
+                });
+            });*/
+
+            /**
+             * 展示商品信息
+             * @param uuid
+             */
+            function showProduct(uuid) {
+                axiosUtil.axios_get("/product/info", {uuid: uuid}, function (data) {
+                    $("#product_show").show();
+                    $("#product_show .layui-colla-title span").text(data.productName);
+                    laytpl($("#product_show_tpl").html()).render(data, function (html) {
+                        $("#product_show .layui-colla-content").html(html);
+                    });
+                    //税率展示
+                    // $("#rate_show").text(data.rate);
+                    //采购价格 costPrice
+                    $("input[name='price']").val(data.costPrice);
+                    //可计算
+                    $("#_calculate").show();
+                });
+            }
+        }else {
+            $("#_is_select").remove();
+
+            var productUuid = utils.requestParam("pid");
+            getProductInfo(productUuid);
+        }
+
+
+        function getProductInfo(productUuid){
+            //获取商品信息
+            axiosUtil.axios_get("/product/info", {uuid: productUuid}, function (data) {
+                $("input[name='salePrice']").val(data.salePrice);
+                // let rate = data.rate || 0.00, noTaxSalePrice = ((100 - rate) * data.salePrice)/100;
+                // $("#_rate").text(rate);
+                // $("input[name='noTaxSalePrice']").val(noTaxSalePrice.toFixed(2));
+                $("#_calculate").show();
+            });
+        }
+
+        //监听
+        utils.event('lay-click', {
+            calculate: function () {
+                let number = parseFloat($("input[name='number']").val());
+                if(!number || typeof number !== "number"){
+                    layer.msg("自动计算失败，请确认商品数量！")
+                }
+
+                let salePrice = $("input[name='salePrice']").val();
+                    // ,noTaxSalePrice = $("input[name='noTaxSalePrice']").val();
+
+                $("input[name='saleTotalPrice']").val((salePrice * number).toFixed(2));
+                // $("input[name='noTaxSaleTotalPrice']").val((noTaxSalePrice * number).toFixed(2));
+
+            }
+        });
+
+    })
+
+</script>
+</body>
+</html>

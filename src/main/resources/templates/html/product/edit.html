@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ch" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script type="application/javascript" src="/static/js/common.js"></script>
+    <title>新增/编辑</title>
+    <style>
+        form .prices input{
+            width: 90px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-panel">
+    <div class="app-form">
+        <form class="layui-form" id="_form_id" lay-filter="_form_filter">
+            <input type="hidden" name="id" th:value="${id[0]}">
+            <div class="layui-form-item">
+                <label class="layui-form-label">产品名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="productName" required lay-verify="required" placeholder="请输入产品名称"
+                           autocomplete="true" class="layui-input required">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">供应商</label>
+                    <div class="layui-input-inline">
+                        <select name="supplierUuid" lay-verify="required" id="_supplierName" lay-search>
+                            <option value="">请选择</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">类别</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="typeName" placeholder="请输入产品种类" class="layui-input">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item prices">
+                <div class="layui-inline">
+                    <label class="layui-form-label">销售价格</label>
+                    <div class="layui-input-block">
+                        <input type="number" name="salePrice" placeholder="￥" min="0.00" step="0.01"
+                               class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">采购价格</label>
+                    <div class="layui-input-block">
+                        <input type="number" name="costPrice" placeholder="￥" min="0.00" step="0.01"
+                               class="layui-input">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" class="layui-textarea"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<script type="application/javascript">
+    layui.use(['form', 'slider', 'axiosUtil', 'utils'], function () {
+        var $ = layui.$,
+            axiosUtil = layui.axiosUtil,
+            utils = layui.utils,
+            slider = layui.slider,
+            form = layui.form;
+        var id = utils.requestParam("id");
+
+        function chooseSupplier(el, success) {
+            axios.get("/supplier/listSupplier" ).then(function (response) {
+                axiosUtil.axiosRes(response, function (data) {
+                    var _html = '';
+                    utils.each(data, function (_, item) {
+                        let mark = '';
+                        /*if (item.type === 0) {
+                            mark = '<span class="layui-badge layui-bg-blue">【通用】</span>'
+                        }*/
+                        _html += '<option value="' + item.uuid + '" >' + item.fullName + mark + '</option>';
+                    }, function () {
+                        $("#" + el).append(_html);
+                        form.render('select');
+                    });
+                });
+            }).then(function () {
+                if (typeof success === 'function') {
+                    success();
+                }
+            });
+        }
+
+        //供应商/生产企业
+        chooseSupplier("_supplierName", function () {
+            // chooseSupplier("_makerName", 2, function () {
+                if (id) {
+                    axios.get("/product/info?id=" + id).then(function (response) {
+                        //给表单赋值
+                        form.val("_form_filter", response.data.data);
+                    });
+                }
+            // })
+        });
+
+
+    })
+</script>
+</body>
+</html>

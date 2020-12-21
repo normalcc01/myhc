@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ch" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script type="application/javascript" src="/static/js/common.js"></script>
+    <title>首页</title>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo">信息录入系统</div>
+        <!-- 头部区域（可配合layui已有的水平导航） -->
+        <ul class="layui-nav layui-layout-left">
+            <li class="layui-nav-item"><a href="/" >首页</a></li>
+            <li class="layui-nav-item">
+                <a href="JavaScript:void(0);" lay-click="bodyHref" data-href="/html/productBill/list">采购管理</a>
+            </li>
+            <li class="layui-nav-item">
+                <a href="JavaScript:void(0);" lay-click="bodyHref" data-href="/html/repertory/list">库存管理</a>
+            </li>
+            <li class="layui-nav-item">
+                <a href="JavaScript:void(0);" lay-click="bodyHref" data-href="/html/sales/list">销售管理</a>
+            </li>
+            <li class="layui-nav-item">
+                <a href="JavaScript:void(0);" >产品管理</a>
+                <dl class="layui-nav-child">
+                    <dd><a href="JavaScript:void(0);" lay-click="bodyHref" data-href="/html/product/list">信息维护</a></dd>
+                </dl>
+            </li>
+            <li class="layui-nav-item">
+                <a href="JavaScript:void(0);" >公司管理</a>
+                <dl class="layui-nav-child">
+                    <dd><a href="JavaScript:void(0);" lay-click="bodyHref" data-href="/html/supplier/list">供应商列表</a></dd>
+                    <!--<dd><a href="JavaScript:void(0);" lay-click="bodyHref" data-href="/html/company/delivery/list">种类列表</a></dd>-->
+                </dl>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 内容主体区域 -->
+    <div class="layui-body" id="parent-main-body">
+        <iframe frameborder="0" scrolling="no"  onload="load(this)" id="main-body" src="/html/layout/index"></iframe>
+    </div>
+
+    <div th:replace="~{html/layout/footer :: footer}"></div>
+</div>
+<script type="application/javascript">
+
+    function load(that){
+        var clientHeight = document.getElementById("parent-main-body").clientHeight;
+        that.height = clientHeight - 30;
+    }
+
+    layui.use(['element', 'utils', 'table'], function () {
+        var $ = layui.jquery,
+            element = layui.element,
+            utils = layui.utils;
+
+
+        utils.event("lay-click", {
+            bodyHref: function () {
+                const url = $(this).data("href");
+                if(url){
+                    $("#main-body").attr("src", url);
+                }
+            }
+        })
+
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ch" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script type="application/javascript" src="/static/js/common.js"></script>
+    <title>产品库存详情</title>
+</head>
+<body class="app-body">
+<div class="app-panel" style="background-color: #ffffff; overflow-x: hidden">
+    <div style="margin: 10px 0 auto">
+        <form class="layui-form" lay-filter="_search">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">选择框</label>
+                    <div class="layui-input-inline">
+                        <select name="inventoryType" lay-filter="_search_select">
+                            <option value="">请选择</option>
+                            <option value="spending">减少</option>
+                            <option value="income">增加</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div style="margin: 0 10px auto">
+        <table class="layui-table" id="inventory_detail_table" lay-filter="inventory_detail_filter" ></table>
+    </div>
+</div>
+
+<script type="application/javascript" th:inline="none">
+    layui.use(['table','utils', 'axiosUtil', 'form'], function () {
+        var $ = layui.$,
+            table = layui.table,
+            utils = layui.utils,
+            axiosUtil = layui.axiosUtil,
+            form = layui.form,
+            layer = parent.layer;
+
+        var uuid = utils.requestParam("uuid");
+
+        //加载列表
+        var _table = table.render({
+            id: "inventoryDetail",
+            elem: '#inventory_detail_table',
+            url : '/repertory/detail',
+            where: {uuid: uuid},
+            page : true,
+            height : "full",
+            limit:10,
+            limits:[5,10,50],//因为该面板高度会overflow：hide 所以暂时最高展示50
+            request: {
+                pageName: 'current' //页码的参数名称，默认：page
+                ,limitName: 'size' //每页数据量的参数名，默认：limit
+            },
+            defaultToolbar: ['filter', {
+                title: '刷新' //标题
+                ,layEvent: 'refresh' //事件名，用于 toolbar 事件中使用
+                ,icon: 'layui-icon-refresh' //图标类名
+            }],
+            totalRow: true,
+            cols : [[
+                {type:'checkbox'},
+                {field: 'orderUuid', title: '订单号', align: 'left', totalRowText: '合计'},
+                {field: 'inventoryType', title: '变更状态', align: 'center'},
+                {field: 'number', title: '变更数量', align: 'center', totalRow: true},
+                {field: 'price', title: '价格', align: 'center'},
+                {field: 'paymentAmount', title: '总利润', align: 'center', totalRow: true},
+                {field: 'createTime', title: '操作时间', align:'center'}
+            ]]
+        });
+
+        //首次加载先清空缓存查询数据
+        layui.sessionData("queryConditions", {
+            key: _table.config.id, value: null
+        });
+
+        //监听搜索
+        form.on('select(_search_select)', function(data){
+            let val = data.value;
+            _table.reload({
+                where: {type: val}
+            });
+
+            layui.sessionData("queryConditions", {
+                key: _table.config.id, value: {type: val}
+            })
+        });
+
+    })
+
+</script>
+</body>
+</html>

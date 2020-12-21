@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ch">
+<head>
+    <meta charset="UTF-8">
+    <script type="application/javascript" src="/static/js/common.js"></script>
+    <title>高级查询</title>
+    <style>
+
+    </style>
+</head>
+<body>
+<div class="app-panel">
+    <div class="app-form">
+        <form class="layui-form" lay-filter="_form_filter">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">产品名称</label>
+                    <div class="layui-input-block">
+                        <select name="productUuid" id="_productUuid" lay-search>
+                            <option value="">请选择</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">供应商</label>
+                    <div class="layui-input-block">
+                        <select name="supplierUuid" id="_supplierUuid">
+                            <option value="">请选择</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">订单时间</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="orderTime" class="layui-input _search_time" placeholder=" - ">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">入库时间</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="arriveTime" class="layui-input _search_time" placeholder=" - ">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">返款时间</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="rebatesTime" class="layui-input _search_time" placeholder=" - ">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <button type="reset" class="layui-btn layui-btn-primary layui-btn-fluid">查询条件重置</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script type="application/javascript">
+    layui.use(['form', 'laydate', 'util', 'axiosUtil'], function () {
+        var $ = layui.$,
+            laydate = layui.laydate,
+            form = layui.form,
+            util = layui.util,
+        axiosUtil = layui.axiosUtil;
+
+        //预加载
+        axiosUtil.axios_select({
+            itemArr: [{item: "#_productUuid", url: "/product/select"}, //产品名称
+                {item: "#_supplierUuid", url: "/supplier/select?"}, //供应商
+                // {item: "#_makerUuid", url: "/company/supplier/select?type=2"}, //生产企业
+                // {item: "#_deliveryUuid", url: "/company/delivery/select"} //配送公司
+            ],
+            renderItem: form
+        });
+
+        //日期范围
+        lay('._search_time').each(function(){
+            laydate.render({
+                elem: this
+                ,trigger: 'click'
+                ,range: "~"
+            });
+        });
+
+    })
+</script>
+</body>
+</html>

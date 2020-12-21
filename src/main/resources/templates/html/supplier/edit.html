@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ch" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script type="application/javascript" src="/static/js/common.js"></script>
+    <title>新增/编辑</title>
+</head>
+<body>
+<div class="app-panel">
+    <div class="app-form">
+        <form class="layui-form" lay-filter="_form_filter">
+            <input type="hidden" name="id" th:value="${id[0]}">
+            <div class="layui-form-item">
+                <label class="layui-form-label">供应商名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="fullName" required lay-verify="required" placeholder="请输入企业名称" autocomplete="true" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" class="layui-textarea"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<script type="application/javascript">
+    layui.use(['form', 'utils', 'axiosUtil'], function () {
+        var $ = layui.$,
+            utils = layui.utils,
+            form = layui.form;
+
+        var id = utils.requestParam("id");
+
+        if(id) {
+            axios.get("/supplier/info?id="+id).then(function (response) {
+                //给表单赋值
+                form.val("_form_filter", response.data.data);
+            });
+        }
+
+    })
+</script>
+</body>
+</html>

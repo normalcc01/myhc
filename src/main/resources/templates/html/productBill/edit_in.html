@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ch" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script type="application/javascript" src="/static/js/common.js"></script>
+    <title>入库新增/编辑</title>
+    <style>
+        .product_show{
+            margin-left: 50px;
+        }
+
+        .product_show .layui-colla-content{
+            padding: unset;
+        }
+
+        .product_show .layui-colla-content table{
+            margin: unset;
+        }
+
+    </style>
+</head>
+<body>
+<div class="app-panel">
+    <div class="app-form">
+        <form class="layui-form" lay-filter="_form_filter">
+            <input type="hidden" name="id" th:value="${id[0]}">
+            <div class="layui-form-item">
+                <label class="layui-form-label">采购产品</label>
+                <div class="layui-input-block">
+                    <div id="_productSelect"></div>
+                </div>
+                <input type="hidden" name="productUuid" id="_productUuid">
+            </div>
+            <!-- 产品详情面板 -->
+            <div class="layui-form-item">
+                <div class="layui-collapse product_show" id="product_show" style="display: none">
+                    <div class="layui-colla-item">
+                        <h2 class="layui-colla-title"><span></span></h2>
+                        <div class="layui-colla-content layui-show"></div>
+                    </div>
+                </div>
+            </div>
+<!--            <div class="layui-form-item">-->
+<!--                <label class="layui-form-label">采购名称</label>-->
+<!--                <div class="layui-input-block">-->
+<!--                    <input type="text" name="purchaseName" required  lay-verify="required" placeholder="请输入采购名称" autocomplete="on" class="layui-input">-->
+<!--                </div>-->
+<!--            </div>-->
+            <div class="layui-form-item">
+                <label class="layui-form-label">订单时间</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="orderTime" class="layui-input" id="_orderTime">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">采购数量</label>
+                <div class="layui-input-inline">
+                    <input type="number" name="number" class="layui-input" min="0" step="1">
+                </div>
+                <div class="form_btn">
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" title="自动计算" style="display: none" id="_calculate" lay-click="calculate">
+                        <i class="layui-icon">&#xe9aa;</i>
+                    </button>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">采购价格</label>
+                    <div class="layui-input-inline">
+                        <input type="number" name="price" class="layui-input" min="0.00" step="0.01" >
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">总金额</label>
+                    <div class="layui-input-inline">
+                        <input type="number" name="paymentAmount" class="layui-input" min="0.00" step="0.01" id="paymentAmount">
+                    </div>
+<!--                    <div class="layui-form-mid layui-word-aux">税率：<span id="rate_show">0.00</span>%</div>-->
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">是否入库</label>
+                <div class="layui-input-block">
+                    <input type="checkbox" name="arrive" lay-skin="switch" lay-text="是|否" value="true">
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" class="layui-textarea"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<script type="text/html" id="product_show_tpl">
+    <table class="layui-table"  lay-even lay-skin="nob">
+        <tbody>
+        <tr>
+            <td width="20%">供应商</td>
+            <td width="80%">{{d.supplierName}}</td>
+        </tr>
+        <tr>
+            <td>种类</td>
+            <td>{{d.typeName}}</td>
+        </tr>
+        <tr>
+            <td>销售价格</td>
+            <td>￥{{d.salePrice}}</td>
+        </tr>
+        <tr>
+            <td>采购价格</td>
+            <td>￥{{d.costPrice}}</td>
+        </tr>
+        </tbody>
+    </table>
+</script>
+<script type="application/javascript" src="/static/lib/xm-select/xm-select.js"></script>
+<script type="application/javascript">
+    layui.use(['form','element', 'laydate','laytpl', 'utils', 'table', 'axiosUtil'], function () {
+        var $ = layui.$,
+            element = layui.element,
+            laydate = layui.laydate,
+            utils = layui.utils,
+            laytpl = layui.laytpl,
+            axiosUtil = layui.axiosUtil,
+            form = layui.form;
+
+        var id = utils.requestParam("id");
+
+        //订单时间
+        laydate.render({
+            elem: '#_orderTime'
+            ,value: utils.nowDate()
+        });
+
+        //渲染多选 -- 采购产品
+        var _xmSelect = xmSelect.render({
+            el: '#_productSelect',
+            filterable: true,
+            remoteSearch: true,
+            radio: true,
+            clickClose: true,
+            prop: {
+                name: 'showname',
+            },
+            template({ item, sels, name, value }){
+                return item.name  + '<span style="position: absolute; right: 10px; color: #8799a3">'+item.mark+'</span>'
+            },
+            remoteMethod: function(val, cb, show){
+                axiosUtil.axios_get("/product/list", {keyword: val}, function (data) {
+                    var cbs = [];
+                    utils.each(data, function (_, item) {
+                        cbs.push({name: item.productName, value: item.uuid, showname: item.productName, mark: item.supplierName + "&nbsp;"})
+                    }, function () {
+                        cb(cbs);
+                    });
+                });
+            },
+            data: [],
+            on: function({ arr, change, isAdd }){
+                if(arr.length > 0){
+                    //将选中的值放到隐藏域
+                    $("#_productUuid").val(arr[0].value);
+                    showProduct(arr[0].value);
+                }
+            }
+        });
+
+
+        /**
+         * 展示商品信息
+         * @param uuid
+         */
+        function showProduct(uuid) {
+            axiosUtil.axios_get("/product/info", {uuid: uuid}, function (data) {
+                $("#product_show").show();
+                $("#product_show .layui-colla-title span").text(data.productName);
+                laytpl($("#product_show_tpl").html()).render(data, function (html) {
+                    $("#product_show .layui-colla-content").html(html);
+                });
+                //采购价格 costPrice
+                $("input[name='price']").val(data.costPrice);
+                //可计算
+                $("#_calculate").show();
+            });
+        }
+
+        //判断回显
+        if(id) {
+            axiosUtil.axios_get("/productBill/info", {id: id}, function (data) {
+                //给表单赋值
+                data.orderTime = utils.formatDate(new Date(data.orderTime));
+                form.val("_form_filter", data);
+                _xmSelect.setValue([ {showname: data.productName, value: data.productUuid} ]);
+                showProduct(data.productUuid);
+            });
+        }
+
+        utils.event('lay-click', {
+            calculate: function () {
+                const number = $("input[name='number']").val();
+                const price = $("input[name='price']").val();
+                $("#paymentAmount").val((number * price).toFixed(2));//含税金额
+            }
+        });
+    })
+</script>
+</body>
+</html>

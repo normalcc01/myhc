@@ -1,0 +1,78 @@
+
+/* 全局各式设定 */
+html, body{
+    height: 100%;
+    font-family: '微软雅黑', sans-serif;
+    background-color: #F2F2F2;
+}
+
+/* layui 布局格式重置 */
+.layui-body{
+    left: 0;
+    overflow-y: hidden;
+}
+
+.layui-layout-admin .layui-footer{
+    left: 0;
+    text-align: center;
+}
+
+
+/* 主框架 */
+#main-body{
+    -webkit-box-flex: 1;
+    -moz-box-flex: 1;
+    -webkit-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    width: -moz-available;
+    width: -webkit-fill-available;
+    transition: all .5s;
+    border: none;
+    background-color: #E6E6E6;
+    overflow-y: hidden;
+    padding: 15px 15px 15px 15px;
+    position: absolute;
+}
+
+.app-body .app-panel{
+    height: 100%;
+}
+
+.app-body .app-panel .app-search{
+    min-height: 100px;
+    padding: 5px;
+    background-color: white;
+}
+.app-body .app-panel .app-search fieldset{
+    border-radius: 5px;
+}
+
+.app-body .app-panel .app-context{
+    padding: 0 10px 0 10px;
+    background-color: white;
+}
+
+.app-panel .app-form{
+    margin: 0;
+    padding: 20px;
+    background-color: #ffffff;
+}
+
+/* 常用样式 */
+.stl-cursor-pointer{
+    cursor: pointer;
+}
+
+.stl-bigger{
+    padding: 3px;
+}
+
+.stl-bigger:hover{
+    padding: 2px;
+    border: #009688 1px solid;
+    border-radius: 3px;
+    /*transform: scale(1.5,1.5);*/
+    /*-webkit-transform:scale(1.5,1.5);  !*兼容-webkit-引擎浏览器*!*/
+    /*-moz-transform:scale(1.5,1.5);     !*兼容-moz-引擎浏览器*!*/
+}

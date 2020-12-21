@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ch" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script type="application/javascript" src="/static/js/common.js"></script>
+    <title>产品库存列表</title>
+</head>
+<body class="app-body">
+<div class="app-panel">
+    <div class="app-search">
+        <fieldset class="layui-elem-field">
+            <legend>查询</legend>
+            <div class="layui-field-box">
+                <form class="layui-form" >
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">产品名称</label>
+                            <div class="layui-input-block">
+                                <select name="productUuid" id="productUuid" lay-search></select>
+                            </div>
+                        </div>
+                        <!--<div class="layui-inline">
+                            <label class="layui-form-label">配送公司</label>
+                            <div class="layui-input-block">
+                                <select name="deliveryUuid" id="deliveryUuid" lay-search></select>
+                            </div>
+                        </div>-->
+                        <div class="layui-inline">
+                            <div class="layui-btn-group">
+                                <button class="layui-btn" lay-submit lay-filter="_form_search">查询</button>
+                                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+    </div>
+    <div class="app-context">
+        <table class="layui-table" id="_table" lay-filter="_table_filter"></table>
+    </div>
+</div>
+
+<!-- 顶部工具栏 -->
+<!--<script type="text/html" id="toolbar">
+    <div class="layui-btn-group">
+        <button type="button" class="layui-btn" lay-event="export" data-type="normal"><i class="layui-icon layui-icon-share"></i>导出</button>
+    </div>
+</script>-->
+
+<script type="text/html" id="col-toolbar">
+    <div class="layui-btn-container">
+        <i class="layui-icon layui-icon-list stl-cursor-pointer stl-bigger" style="font-size: 20px" title="查看详情" lay-event="detail"></i>
+        {{# if(d.number >0){ }}
+        <i class="layui-icon layui-icon-release stl-cursor-pointer stl-bigger" style="font-size: 20px" title="商品出库" lay-event="sales"></i>
+        {{# } }}
+        <!--<i class="layui-icon layui-icon-unlink stl-cursor-pointer stl-bigger" style="font-size: 20px" title="退货记录" lay-event="sales_return"></i>-->
+    </div>
+</script>
+
+<!-- 库存变更详情面板 -->
+<script type="text/html" id="inventory_detail_tpl">
+    <div class="inventory_detail" style="margin: 0 10px auto">
+        <table class="layui-table" lay-filter="inventory_detail_filter">
+            <thead>
+            <tr>
+                <th>订单号</th>
+                <th lay-data="align: 'center'">变更状态</th>
+                <th lay-data="align: 'center'">变更数量</th>
+                <th>总价格</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#  layui.each(d, function(index, item){ }}
+            <tr>
+                <td>{{ item.orderUuid }}</td>
+                <td>
+                    {{# if(item.number > 0){ }}
+                    <span class="layui-badge layui-bg-blue">增加</span>
+                    {{# }else if(item.number < 0){ }}
+                    <span class="layui-badge">减少</span>
+                    {{# } }}
+                </td>
+                <td> {{ item.number }}</td>
+                <td>{{ item.totalPrice }}</td>
+            </tr>
+            {{#  }); }}
+
+            {{#  if(d.length === 0){ }}
+            <tr>
+                <td colspan="4">无数据</td>
+            </tr>
+            {{#  } }}
+            </tbody>
+
+        </table>
+    </div>
+</script>
+<script type="application/javascript" th:inline="none">
+    layui.use(['table','form', 'laytpl', 'utils', 'axiosUtil'], function () {
+        var $ = layui.$,
+            table = layui.table,
+            form = layui.form,
+            laytpl = layui.laytpl,
+            utils = layui.utils,
+            axiosUtil = layui.axiosUtil,
+            layer = parent.layer;
+
+        //加载查询
+        axiosUtil.axios_get("/product/list", function (res) {
+            var _html = '<option value="">请选择</option>';
+            utils.each(res, function (_, item) {
+                _html += '<option value="'+item.uuid+'">'+item.productName+'</option>';
+            }, function () {
+                $("#productUuid").html(_html);
+                form.render('select');
+            });
+        });
+        /*axiosUtil.axios_get("/company/delivery/list", function (res) {
+            var _html = '<option value="">请选择</option>';
+            utils.each(res, function (_, item) {
+                _html += '<option value="'+item.uuid+'">'+item.fullName+'</option>';
+            }, function () {
+                $("#deliveryUuid").html(_html);
+                form.render('select');
+            });
+        });*/
+
+        //加载列表
+        var _table = table.render({
+            elem: '#_table',
+            url : '/repertory/listData',
+            page : true,
+            height : "full-150",
+            request: {
+                pageName: 'current' //页码的参数名称，默认：page
+                ,limitName: 'size' //每页数据量的参数名，默认：limit
+            },
+            toolbar: "#toolbar",
+            defaultToolbar: ['filter', {
+                title: '刷新' //标题
+                ,layEvent: 'refresh' //事件名，用于 toolbar 事件中使用
+                ,icon: 'layui-icon-refresh' //图标类名
+            }],
+            cols : [[
+                {type:'checkbox'},
+                {field: 'productName', title: '产品名称', align: 'left'},
+                {field: 'supplierName', title: '供应商名称', align: 'left'},
+                /*{field: 'makerName', title: '生产企业名称', align: 'left'},
+                {field: 'deliveryName', title: '配送公司', align: 'left'},*/
+                {field: 'typeName', title: '种类', align: 'center'},
+                {field: 'number', title: '库存数量', align: 'center'},
+                {field: 'paid', title: '采购价格', align: 'center'},
+                {field: 'totalPrice', title: '总金额', align: 'center'},
+                // {field: 'noTaxPaid', title: '不含税进价', align: 'center'},
+                {title: '操作', align:'center', toolbar: '#col-toolbar'}
+            ]]
+        });
+
+        layui.sessionData("queryConditions", {
+            key: _table.config.id, value: null
+        });
+
+        //查询
+        form.on('submit(_form_search)', function(data){
+            _table.reload({
+                where: data.field
+            });
+            layui.sessionData("queryConditions", {
+                key: _table.config.id, value: data.field
+            });
+            return false;
+        });
+
+
+        //监听工具条
+        table.on('tool(_table_filter)', function(obj){ //注：tool 是工具条事件名，test 是 table 原始容器的属性 lay-filter="对应的值"
+            var data = obj.data; //获得当前行数据
+            var tr = obj.tr; //获得当前行 tr 的 DOM 对象（如果有的话）
+
+            switch(obj.event){
+                case 'detail':
+                    layer.open({
+                        type : 2,
+                        title: '库存详情',
+                        shadeClose: true,
+                        area : ['80%', '80%'],
+                        content: "/html/repertory/detail?uuid="+data.uuid
+                    });
+                    break;
+                case 'sales':
+                    layer.open({
+                        type : 2,
+                        title: '产品销售',
+                        shadeClose: true,
+                        area : ['750px', '570px'],
+                        content: "/html/repertory/sales?pid="+data.productUuid,
+                        btn: ['保存', '取消'],
+                        yes: function (index, layero) {
+                            var form = layer.getChildFrame('form', index);
+                            var field = utils.formValue(form);
+                            // field.deliveryUuid = data.deliveryUuid;
+                            field.productUuid = data.productUuid;
+                            axiosUtil.axios_post("/order/sales/add", field, function () {
+                                obj.update({number: data.number - field.number});//同步更新当前页面的库存数量
+                                layer.close(index);
+                            });
+                        },btn2: function(index, layero){
+                            layer.close(index);
+                        }
+                        ,end : function(index, layero){
+                            axiosUtil.reload(_table);
+                            return false;
+                        }
+                    });
+                    break;
+            }
+        });
+
+        //监听头部工具栏事件
+        table.on('toolbar(_table_filter)', function(obj){
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch(obj.event){
+                case 'refresh':
+                    axiosUtil.reload(_table);
+                    break;
+            }
+        });
+
+
+    })
+
+</script>
+</body>
+</html>
